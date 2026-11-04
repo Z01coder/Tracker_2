@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <!-- «Задачник» — минималистичный трекер задач. Этап 2: функционал прежде стиля. -->
+  <meta charset="UTF-8">
+  <!-- viewport: корректный масштаб на смартфонах (адаптивность) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Задачник — простой трекер задач</title>
+  <meta name="theme-color" content="#3D5A80">
+  <!-- Иконка-фавикон: тот же логотип, что и в шапке -->
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <!-- Шрифт — только системный стек, внешних загрузок нет
+       (дух требования «лучше без дополнительных библиотек»: приложение работает офлайн) -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- Шапка: логотип, название, счётчик задач по статусам.
+         Счётчик обновляется из app.js (renderAll) при каждом изменении данных. -->
+    <header class="app-header">
+      <img class="app-logo" src="assets/logo.svg" alt="Логотип «Задачник»" width="40" height="40">
+      <div>
+        <h1 class="app-title">Задачник</h1>
+        <p class="app-counts" id="appCounts">Всего 0 · новых 0 · в процессе 0 · выполнено 0</p>
+      </div>
+    </header>
+
+    <!-- Блок «Ближайшая по сроку невыполненная задача» — веб-аналог today-extension из заказа.
+         Показывает невыполненную задачу с ближайшей датой; клик — переход к её карточке.
+         Если невыполненных задач нет, блок скрывается (атрибут hidden управляется из app.js). -->
+    <button class="nearest" id="nearestCard" type="button" hidden
+            title="Перейти к карточке задачи">
+      <span class="nearest-label">Ближайшая по сроку невыполненная задача</span>
+      <span class="nearest-row">
+        <span class="nearest-title" id="nearestTitle"></span>
+        <span class="badge" id="nearestDate"></span>
+        <span class="badge" id="nearestStatus"></span>
+      </span>
+    </button>
+
+    <!-- Форма быстрого добавления: заголовок + срок.
+         Создаёт задачу со статусом «новая» и пустой заметкой
+         (детали можно дописать позже через «Редактировать»). -->
+    <form class="add-form" id="addForm">
+      <input class="add-input" id="addTitle" type="text"
+             placeholder="Заголовок задачи" autocomplete="off" maxlength="200" required>
+      <label class="add-date-label">
+        <span class="add-date-text">Срок</span>
+        <input class="add-date" id="addDate" type="date" required>
+      </label>
+      <button class="btn btn-primary" type="submit">Добавить</button>
+    </form>
+
+    <!-- Панель «Вставить текст» — веб-аналог share-extension из заказа.
+         Элемент details/summary: сворачивается-разворачивается без JS.
+         Правила парсинга (см. ТЗ 6.4 и app.js): первая непустая строка — заголовок,
+         остальное — заметка. Создаёт задачу со сроком «сегодня», статусом «новая». -->
+    <details class="paste-panel" id="pastePanel">
+      <summary class="paste-summary">Вставить текст задачи</summary>
+      <div class="paste-body">
+        <textarea class="paste-textarea" id="pasteText" rows="4"
+                  placeholder="Вставьте сюда текст задачи…&#10;Первая строка станет заголовком, остальное — заметкой."></textarea>
+        <div class="paste-actions">
+          <span class="paste-hint" id="pasteHint">Первая строка → заголовок, остальное → заметка</span>
+          <button class="btn btn-primary" type="button" id="pasteCreateBtn">Создать задачу из текста</button>
+        </div>
+      </div>
+    </details>
+
+    <!-- Фильтр по статусу: четыре кнопки-сегмента со счётчиками.
+         Счётчики считаются по всему списку задач, активный сегмент подсвечивается. -->
+    <div class="filter-bar" id="filterBar" role="group" aria-label="Фильтр по статусу">
+      <button class="filter-btn is-active" type="button" data-filter="all">Все (<span id="countAll">0</span>)</button>
+      <button class="filter-btn" type="button" data-filter="new">Новые (<span id="countNew">0</span>)</button>
+      <button class="filter-btn" type="button" data-filter="in_progress">В процессе (<span id="countInProgress">0</span>)</button>
+      <button class="filter-btn" type="button" data-filter="done">Выполненные (<span id="countDone">0</span>)</button>
+    </div>
+
+    <!-- Список задач: карточки рендерятся из app.js полностью при каждом изменении.
+         Сортировка: по дате по возрастанию, выполненные — внизу (см. ТЗ п. 10). -->
+    <section class="task-section" aria-label="Список задач">
+      <div id="taskList" class="task-list"></div>
+
+      <!-- Пустое состояние №1: задач нет вообще -->
+      <div class="empty-state" id="emptyAll" hidden>
+        <p class="empty-title">Задач нет.</p>
+        <p class="empty-text">Добавьте первую через форму выше или вставьте текст.</p>
+      </div>
+
+      <!-- Пустое состояние №2: задачи есть, но текущий фильтр ничего не показал -->
+      <div class="empty-state" id="emptyFiltered" hidden>
+        <p class="empty-title">В этом статусе задач нет.</p>
+        <p class="empty-text">Переключите фильтр, чтобы увидеть остальные задачи.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Модальное окно «Редактирование задачи»: полный набор полей.
+       Открывается кнопкой «Редактировать» на карточке.
+       Обычная форма с novalidate: закрытием окна управляет app.js
+       (валидация полей — вручную, окно закрывается только при успешном
+       сохранении; Esc и «Отмена» закрывают его нативно/явно). -->
+  <dialog class="task-modal" id="taskModal">
+    <form id="taskForm" novalidate>
+      <h2 class="modal-title">Редактирование задачи</h2>
+
+      <label class="field">
+        <span class="field-label">Заголовок</span>
+        <input type="text" id="taskTitle" maxlength="200" required>
+        <span class="field-error" id="titleError" hidden>Заполните заголовок задачи</span>
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Срок</span>
+          <input type="date" id="taskDate" required>
+          <span class="field-error" id="dateError" hidden>Укажите срок задачи</span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Статус</span>
+          <select id="taskStatus">
+            <option value="new">Новая</option>
+            <option value="in_progress">В процессе</option>
+            <option value="done">Выполнено</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Заметка</span>
+        <textarea id="taskNote" rows="3" maxlength="500" placeholder="Детали, ссылки, пояснения…"></textarea>
+      </label>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" id="cancelModalBtn">Отмена</button>
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

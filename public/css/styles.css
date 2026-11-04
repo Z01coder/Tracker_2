@@ -1,0 +1,435 @@
+/*
+ * «Задачник» — стили (этап 3: мини-брендбук из info/agents.md).
+ *
+ * Характер стиля — утилитарный, сдержанный, «инженерный»:
+ *   холодная стальная палитра, тонкие границы 1 px вместо теней,
+ *   лёгкое скругление 6 px, системный шрифт, никакой декоративности.
+ * Красиво = аккуратно и читаемо.
+ *
+ * Вся палитра собрана в CSS-переменных :root. Сетка: одна центральная
+ * колонка (максимум 720 px), на мобильных — во всю ширину.
+ */
+
+/* ===================== Переменные (мини-брендбук) ===================== */
+
+:root {
+  --color-bg: #F5F6F8;        /* фон страницы: холодный светло-серый */
+  --color-card: #FFFFFF;      /* карточки */
+  --color-text: #1F2933;      /* основной текст: графит */
+  --color-muted: #64707D;     /* вторичный текст, счётчики, «новая» */
+  --color-border: #D9DDE3;    /* границы и разделители */
+
+  --color-accent: #3D5A80;    /* основной акцент: стальной синий */
+  --color-accent-dark: #2E4057; /* тёмный акцент: hover-состояния */
+
+  --color-done: #4A7C59;      /* статус «выполнено»: приглушённый зелёный */
+  --color-danger: #A6463D;    /* просрочка, удаление: кирпичный */
+
+  --radius: 6px;              /* лёгкое скругление */
+  --transition: 0.15s ease;   /* единый темп сдержанных переходов */
+}
+
+/* ===================== Базовые стили ===================== */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  /* Системный шрифтовый стек: без внешних загрузок, работает офлайн
+     (в духе требования «лучше без дополнительных библиотек») */
+  font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+/* Центральная колонка приложения */
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+}
+
+/* Видимая рамка при навигации с клавиатуры — доступность без украшений */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ===================== Шапка ===================== */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border); /* одна линия — достаточно для «инженерного» вида */
+  margin-bottom: 16px;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.app-counts {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+/* ===================== Общие элементы ===================== */
+
+/* Кнопки: основная (акцент) и тихая (ghost). Минимальная высота 40 px,
+   на сенсорных экранах — 44 px (см. media в конце файла) */
+.btn {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.btn-primary:hover { background: var(--color-accent-dark); border-color: var(--color-accent-dark); }
+
+.btn-ghost:hover { border-color: var(--color-muted); }
+
+.btn-small { min-height: 32px; padding: 4px 10px; font-size: 13px; }
+
+/* «Взведённая» кнопка удаления: кирпичная рамка и текст */
+.btn-danger.is-armed {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* Бейджи: статусы и даты. Цвет — тонкой рамкой и текстом,
+   без заливок: сдержанно и читаемо */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* Статусы: «новая» — нейтральный серый, «в процессе» — стальной синий,
+   «выполнено» — приглушённый зелёный (классы ставит app.js) */
+.badge-new { border-color: var(--color-muted); color: var(--color-muted); }
+.badge-in_progress { border-color: var(--color-accent); color: var(--color-accent); }
+.badge-done { border-color: var(--color-done); color: var(--color-done); }
+
+/* Обычная дата — нейтральная; просрочка — кирпичная (класс ставит app.js) */
+.badge-date { color: var(--color-muted); }
+.badge-overdue { border-color: var(--color-danger); color: var(--color-danger); font-weight: 600; }
+
+/* ===================== Блок «Ближайшая задача» ===================== */
+
+/* Плашка-кнопка над списком (аналог today-extension).
+   Стальной левый край + пунктирная рамка: видно, что это «особый» блок,
+   и по нему можно кликнуть */
+.nearest {
+  display: block;
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  text-align: left;
+  border: 1px dashed var(--color-accent);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.nearest:hover { background: #EEF2F7; } /* лёгкий стальной отлив при наведении */
+
+.nearest-label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-muted);
+  margin-bottom: 4px;
+}
+
+.nearest-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nearest-title { font-weight: 600; }
+
+/* ===================== Форма добавления ===================== */
+
+.add-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.add-input { flex: 1; }
+
+/* Поля ввода — единый вид, рамка темнеет при фокусе */
+.add-input, .add-date, .paste-textarea,
+.field input, .field textarea, .field select {
+  padding: 9px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  color: var(--color-text);
+  font: inherit;
+  transition: border-color var(--transition);
+}
+
+.add-input:focus, .add-date:focus, .paste-textarea:focus,
+.field input:focus, .field textarea:focus, .field select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.add-date-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.add-date-text { font-size: 13px; color: var(--color-muted); }
+
+/* ===================== Панель «Вставить текст» ===================== */
+
+.paste-panel {
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+}
+
+/* Заголовок сворачиваемой панели: тихий, с мини-стрелкой от маркера details */
+.paste-summary {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-muted);
+  transition: color var(--transition);
+}
+
+.paste-summary:hover { color: var(--color-text); }
+
+.paste-body { padding: 0 14px 12px; }
+
+.paste-textarea { width: 100%; resize: vertical; }
+
+.paste-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.paste-hint { font-size: 12px; color: var(--color-muted); }
+
+/* ===================== Фильтр ===================== */
+
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.filter-btn {
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.filter-btn:hover { border-color: var(--color-muted); }
+
+/* Активный сегмент — стальная заливка, как основная кнопка */
+.filter-btn.is-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ===================== Список задач ===================== */
+
+.task-section { margin-top: 8px; }
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Карточка задачи: белая плашка с тонкой рамкой */
+.card {
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  transition: border-color var(--transition), background-color var(--transition);
+}
+
+/* Подсветка после перехода из блока «Ближайшая задача»:
+   стальная рамка + лёгкий отлив фона, снимается через 1,5 сек (app.js) */
+.card.is-highlighted {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  background: #EEF2F7;
+}
+
+.card-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.card-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Выполненные задачи: приглушённый заголовок — визуально «уже сделано».
+   Зачёркивание не применяем: статус и так виден бейджем, минимализм */
+.card.is-done .card-title { color: var(--color-muted); }
+
+.card-note {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.card-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-select {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+  transition: border-color var(--transition);
+}
+
+.status-select:hover { border-color: var(--color-muted); }
+
+/* ===================== Пустые состояния ===================== */
+
+.empty-state {
+  padding: 28px 16px;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-muted);
+}
+
+.empty-title { margin: 0 0 4px; font-weight: 600; color: var(--color-text); }
+.empty-text { margin: 0; font-size: 14px; }
+
+/* ===================== Модальное окно ===================== */
+
+.task-modal {
+  width: min(480px, calc(100vw - 32px));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(31, 41, 51, 0.12); /* единственная мягкая тень — отделяет окно от фона */
+}
+
+.task-modal::backdrop { background: rgba(31, 41, 51, 0.45); }
+
+.modal-title { margin: 0 0 14px; font-size: 18px; }
+
+.field { display: block; margin-bottom: 12px; }
+
+.field-row { display: flex; gap: 12px; }
+.field-row .field { flex: 1; }
+
+.field-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.field input, .field textarea, .field select { width: 100%; }
+
+/* Сообщение об ошибке под полем модалки и проблемное поле (кирпичная рамка) */
+.field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.field input.is-invalid { border-color: var(--color-danger); }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* ===================== Адаптивность ===================== */
+
+/* Смартфоны (360–431 px): форма и панели перестраиваются в столбик */
+@media (max-width: 600px) {
+  .app { padding: 16px 12px 48px; }
+  .add-form { flex-direction: column; }
+  .add-date-label { justify-content: space-between; }
+  .paste-actions { flex-direction: column; align-items: stretch; }
+  .field-row { flex-direction: column; gap: 0; }
+  /* Кнопка «Добавить» — во всю ширину: главная цель касания не мелкая */
+  .add-form .btn-primary { width: 100%; }
+}
+
+/* Сенсорные экраны: цели касания не меньше 44 px (ТЗ раздел 9) */
+@media (pointer: coarse) {
+  .btn, .filter-btn { min-height: 44px; }
+  .status-select, .btn-small { min-height: 44px; }
+}
+
+/* Уважение к системной настройке «меньше движения»:
+   сдержанные переходы отключаются, анимации тут и так почти нет */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
